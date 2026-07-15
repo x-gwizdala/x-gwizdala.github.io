@@ -18,6 +18,18 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        /* Tło dla cząsteczek JavaScript */
+        #quantum-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
         }
         header {
             background: linear-gradient(135deg, #1e1b4b, #311042);
@@ -25,13 +37,14 @@
             text-align: center;
             padding: 5rem 1rem;
             border-bottom: 1px solid #3b0764;
+            position: relative;
+            z-index: 1;
         }
         header h1 {
             font-size: 2.8rem;
             margin-bottom: 0.5rem;
             letter-spacing: -0.05em;
             background: linear-gradient(to right, #c084fc, #6366f1);
-            -viewport-webkit-background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -44,9 +57,12 @@
             margin: 3rem auto;
             padding: 0 1.5rem;
             flex: 1;
+            position: relative;
+            z-index: 1;
         }
         .content-section {
-            background: #1e293b;
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(8px);
             padding: 2.5rem;
             border-radius: 12px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
@@ -56,6 +72,13 @@
             margin-bottom: 1.5rem;
             font-size: 1.1rem;
             text-align: justify;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        p.text-block.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
         p.text-block:last-child {
             margin-bottom: 0;
@@ -67,10 +90,15 @@
             color: #64748b;
             font-size: 0.9rem;
             border-top: 1px solid #1e293b;
+            position: relative;
+            z-index: 1;
         }
     </style>
 </head>
 <body>
+
+    <!-- Canvas używany przez JavaScript do rysowania cząsteczek -->
+    <canvas id="quantum-canvas"></canvas>
 
     <header>
         <h1>The Quantum Era</h1>
@@ -97,5 +125,99 @@
         <p>&copy; 2026 Quantum Aesthetics Project. Hosted via GitHub Pages.</p>
     </footer>
 
+    <!-- Sekcja z kodem JavaScript -->
+    <script>
+        // 1. EFEKT POJAWIANIA SIĘ TEKSTU (Fade-in on scroll)
+        document.addEventListener("DOMContentLoaded", () => {
+            const blocks = document.querySelectorAll('.text-block');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            blocks.forEach(block => observer.observe(block));
+        });
+
+        // 2. KOD ANIMACJI KWANTOWYCH CZĄSTECZEK (Canvas Background)
+        const canvas = document.getElementById('quantum-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                // Losowa prędkość (odzwierciedla ciągły ruch i niepewność)
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                this.alpha = Math.random() * 0.5 + 0.2;
+                this.fadeSpeed = Math.random() * 0.005 + 0.002;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                
+                // Losowa zmiana stanu cząsteczki (zjawisko fluktuacji)
+                this.alpha -= this.fadeSpeed;
+
+                // Jeśli cząsteczka zniknie lub wyjdzie za ekran, stwórz nową w losowym miejscu
+                if (this.alpha <= 0 || this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.alpha = Math.random() * 0.5 + 0.5;
+                    this.size = Math.random() * 2 + 0.5;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                // Delikatny fioletowo-niebieski kolor cząsteczek
+                ctx.fillStyle = '#c084fc';
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#6366f1';
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Inicjalizacja puli 70 cząsteczek
+        function init() {
+            for (let i = 0; i < 70; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            // Czyszczenie ekranu z lekkim śladem (efekt smugi / nakładania stanów)
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        init();
+        animate();
+    </script>
 </body>
 </html>
